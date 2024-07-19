@@ -1,0 +1,161 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ava-config
+  namespace: antps-service
+data:
+  config.json: |
+    {
+      "api-admin-enabled": true,
+      "bootstrap-ids": "",
+      "bootstrap-ips": "",
+      "chain-config-dir": "/app/config/chainConfigs",
+      "data-dir": "/app/data",
+      "db-dir": "/app/data/db",
+      "genesis-file": "/app/config/genesis.json",
+      "health-check-frequency": "2s",
+      "http-host": "0.0.0.0",
+      "http-port": 9650,
+      "index-enabled": true,
+      "log-dir": "/tmp/logs",
+      "log-display-level": "ERROR",
+      "log-level": "INFO",
+      "network-id": 10,
+      "network-max-reconnect-delay": "1s",
+      "network-peer-list-gossip-frequency": "250ms",
+      "public-ip": "127.0.0.1",
+      "tx-fee": 0,
+      "transform-subnet-tx-fee": 0,
+      "create-asset-tx-fee": 0,
+      "create-blockchain-tx-fee": 0,
+      "create-subnet-tx-fee": 0,
+      "stake-supply-cap": 0,
+      "min-delegation-fee": 0,
+      "min-delegator-stake": 0,
+      "add-primary-network-validator-fee": 0,
+      "add-primary-network-delegator-fee": 0,
+      "min-validator-stake": 0,
+      "add-subnet-validator-fee": 0,
+      "snow-sample-size": 1,
+      "snow-quorum-size": 1,
+      "staking-enabled": false,
+      "staking-port": 9651,
+      "staking-signer-key-file": "/app/keys/signer.key",
+      "staking-tls-cert-file": "/app/keys/staking.crt",
+      "staking-tls-key-file": "/app/keys/staking.key",
+      "subnet-config-dir": "/app/config/subnetConfigs"
+    }
+    
+  genesis.json: |
+    {
+    "allocations": [
+      {
+        "avaxAddr": "X-custom1g65uqn6t77p656w64023nh8nd9updzmxwd59gh",
+        "ethAddr": "0xb3d82b1367d362de99ab59a658165aff520cbd4d",
+        "initialAmount": 0,
+        "unlockSchedule": [
+          {
+            "amount": 100000,
+            "locktime": 1708233990
+          }
+        ]
+      },
+      {
+        "avaxAddr": "X-custom18jma8ppw3nhx5r4ap8clazz0dps7rv5u9xde7p",
+        "ethAddr": "0xb3d82b1367d362de99ab59a658165aff520cbd4d",
+        "initialAmount": 0,
+        "unlockSchedule": [
+          {
+            "amount": 100000,
+            "locktime": 1708233990
+          }
+        ]
+      },
+      {
+        "avaxAddr": "X-custom16045mxr3s2cjycqe2xfluk304xv3ezhkhsvkpr",
+        "ethAddr": "0xb3d82b1367d362de99ab59a658165aff520cbd4d",
+        "initialAmount": 0,
+        "unlockSchedule": [
+          {
+            "amount": 100000,
+            "locktime": 1708233990
+          }
+        ]
+      }
+    ],
+    "cChainGenesis": "{\"config\":{\"chainId\":43112,\"homesteadBlock\":0,\"daoForkBlock\":0,\"daoForkSupport\":true,\"eip150Block\":0,\"eip150Hash\":\"0x2086799aeebeae135c246c65021c82b4e15a2c451340993aacfd2751886514f0\",\"eip155Block\":0,\"eip158Block\":0,\"byzantiumBlock\":0,\"constantinopleBlock\":0,\"petersburgBlock\":0,\"istanbulBlock\":0,\"muirGlacierBlock\":0},\"nonce\":\"0x0\",\"timestamp\":\"0x0\",\"extraData\":\"0x00\",\"gasLimit\":\"0x59682F00\",\"difficulty\":\"0x0\",\"mixHash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\",\"coinbase\":\"0x0000000000000000000000000000000000000000\",\"alloc\":{\"0x123463a4b065722e99115d6c222f267d9cabb524\": {    \"balance\": \"10000000000000000000000000\"}},\"number\":\"0x0\",\"gasUsed\":\"0x0\",\"parentHash\":\"0x0000000000000000000000000000000000000000000000000000000000000000\"}",
+    "initialStakeDuration": 31536000,
+    "initialStakeDurationOffset": 5400,
+    "initialStakedFunds": ["X-custom1g65uqn6t77p656w64023nh8nd9updzmxwd59gh"],
+    "initialStakers": [
+      {
+        "delegationFee": 0,
+        "nodeID": "NodeID-7Xhw2mDxuDS44j42TCB6U5579esbSt3Lg",
+        "rewardAddress": "X-custom18jma8ppw3nhx5r4ap8clazz0dps7rv5u9xde7p"
+      },
+      {
+        "delegationFee": 0,
+        "nodeID": "NodeID-MFrZFVCXPv5iCn6M9K6XduxGTYp891xXZ",
+        "rewardAddress": "X-custom18jma8ppw3nhx5r4ap8clazz0dps7rv5u9xde7p"
+      }
+    ],
+    "message": "{{ fun_quote }}",
+    "networkID": 10,
+    "startTime": 1705397190
+    }
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: antps-ava-chainconfigs
+  namespace: antps-service
+data: # chainConfigs/C
+  config.json: |
+    {
+    "allow-unfinalized-queries": false,
+    "allow-unprotected-txs": false,
+    "api-max-blocks-per-request": 0,
+    "api-max-duration": 0,
+    "continuous-profiler-dir": "",
+    "continuous-profiler-frequency": 900000000000,
+    "continuous-profiler-max-files": 5,
+    "admin-api-dir": "",
+    "admin-api-enabled": false,
+    "eth-apis": [
+    "admin",
+    "debug",
+    "debug-handler",
+    "debug-tracer",
+    "eth",
+    "eth-filter",
+    "internal-account",
+    "internal-blockchain",
+    "internal-debug",
+    "internal-eth",
+    "internal-personal",
+    "internal-transaction",
+    "internal-tx-pool",
+    "net",
+    "web3"
+    ],
+    "keystore-directory": "",
+    "keystore-external-signer": "",
+    "keystore-insecure-unlock-allowed": false,
+    "local-txs-enabled": false,
+    "log-level": "info",
+    "metrics-enabled": false,
+    "metrics-expensive-enabled": false,
+    "preimages-enabled": false,
+    "pruning-enabled": true,
+    "remote-tx-gossip-only-enabled": false,
+    "rpc-gas-cap": 500000000,
+    "rpc-tx-fee-cap": 100,
+    "snapshot-async": true,
+    "snapshot-verification-enabled": false,
+    "snowman-api-enabled": false,
+    "regossip-frequency": 60000000000,
+    "regossip-max-txs": 15,
+    "ws-cpu-max-stored": 0,
+    "ws-cpu-refill-rate": 0
+    }

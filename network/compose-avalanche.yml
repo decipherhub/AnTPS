@@ -1,0 +1,85 @@
+services:
+  # avalanchego/1.11.8
+  node1:
+    image: avaplatform/avalanchego:2e72c7c2
+    command: [ "sh", "-c", "/avalanchego/build/avalanchego --config-file=/app/config/config.json" ]
+    volumes:
+      - ./ava-volumes/shared:/app/config
+      - ./ava-volumes/node1:/app/keys
+    ports:
+      - "9650:9650"
+    restart: always
+    networks:
+      antps-ava-networks:
+        ipv4_address: 10.110.101.1
+
+  node2:
+    image: avaplatform/avalanchego:2e72c7c2
+    command: [ "sh", "-c", "/avalanchego/build/avalanchego --config-file=/app/config/config.json" ]
+    volumes:
+      - ./ava-volumes/shared:/app/config
+      - ./ava-volumes/node2:/app/keys
+    ports:
+      - "9651:9650"
+    restart: always
+    networks:
+      antps-ava-networks:
+        ipv4_address: 10.110.101.2
+
+  postgres:
+    image: postgres:15.0
+    environment:
+      POSTGRES_PASSWORD: "0xantps"
+      POSTGRES_DB: "antps_dev"
+    command:
+      - "-cmax_connections=3000"
+    networks:
+      antps-ava-networks:
+        ipv4_address: 10.110.100.101
+
+  backend:
+    extends:
+      file: ../explorer/backend.yml
+      service: backend
+    environment:
+      DATABASE_URL: postgresql://postgres:0xantps@10.110.100.101:5432/blockscout
+      ETHEREUM_JSONRPC_HTTP_URL: http://10.110.101.1:9650/ext/bc/C/rpc
+      ETHEREUM_JSONRPC_TRACE_URL: http://10.110.101.1:9650/ext/bc/C/rpc
+      ETHEREUM_JSONRPC_WS_URL: ws://10.110.101.1:9650/ext/bc/C/ws
+      ETHEREUM_JSONRPC_HTTP_INSECURE: 'true'
+      ETHEREUM_JSONRPC_VARIANT: 'geth'
+      CHAIN_ID: '43112'
+    ports:
+      - '4000:4000'
+    depends_on:
+      - node1
+      - node2
+      - postgres
+    networks:
+      antps-ava-networks:
+        ipv4_address: 10.110.101.100
+
+  frontend:
+    extends:
+      file: ../explorer/frontend.yml
+      service: frontend
+    environment:
+      NEXT_PUBLIC_API_HOST: '10.110.101.100:4000'
+      NEXT_PUBLIC_APP_HOST: '10.110.101.101'
+      NEXT_PUBLIC_API_BASE_PATH: '/'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - node1
+      - node2
+      - postgres
+    networks:
+      antps-ava-networks:
+        ipv4_address: 10.110.101.101
+
+networks:
+  antps-ava-networks:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.110.0.0/16

@@ -1,0 +1,247 @@
+version: "3.9"
+
+x-bootnode:
+  &bootnode
+  - /bin/sh
+  - -c
+  - |
+    geth --datadir=/src init /execution/genesis.json
+    exec geth --http --http.api=eth,net,web3,admin,debug,txpool --http.addr=0.0.0.0 --http.corsdomain=* \
+    --ws --ws.api=eth,net,web3,admin,debug,txpool --ws.addr=0.0.0.0 --ws.origins=* \
+    --authrpc.vhosts=* --authrpc.addr=0.0.0.0 --authrpc.jwtsecret=/execution/jwtsecret \
+    --datadir=/src --keystore=/.keystore --allow-insecure-unlock --unlock=0x123463a4b065722e99115d6c222f267d9cabb524 \
+    --password=/execution/geth_password.txt --nodiscover --syncmode=full --nodekeyhex=2c2277ee3a47bca95f1b9d6731d37915e009ca8577906a295f75426938771693 \
+    --ipcdisable
+
+x-attach:
+ &attach
+  - /bin/sh
+  - -c
+  - |
+    geth --datadir=/src init /execution/genesis.json
+    exec geth --bootnodes=enode://49b95e4cc69694aa1fbb0a4737eb69aa42799e6c4d73803225e8c86ae2715d490a0aa54767fe0e21227095d85d34b5e843064e1499e60249eb74d29119318cb7@10.112.101.12:30303 \
+      --http --http.api=eth,net,web3,admin,debug,txpool --http.addr=0.0.0.0 --http.corsdomain=* \
+      --ws --ws.api=eth,net,web3,admin,debug,txpool --ws.addr=0.0.0.0 --ws.origins=* \
+      --authrpc.vhosts=* --authrpc.addr=0.0.0.0 --authrpc.jwtsecret=/execution/jwtsecret \
+      --datadir=/src --allow-insecure-unlock --nodiscover --syncmode=full --ipcdisable
+
+services:
+#### If the time in Genesis.json is slower than the current time, an Epoch error will occur.
+#  create-beacon-chain-genesis:
+#    image: "gcr.io/prysmaticlabs/prysm/cmd/prysmctl@sha256:4ff675463286ecc0e3efbbdbfb4887697a5c17b4369644b2eb0943608c15465d"
+#    command:
+#      - testnet
+#      - generate-genesis
+#      - --fork=deneb
+#      - --num-validators=64
+#      - --output-ssz=/consensus/genesis.ssz
+#      - --chain-config-file=/consensus/config.yml
+#      - --geth-genesis-json-in=/execution/genesis.json
+#      - --geth-genesis-json-out=/execution/genesis.json
+#    volumes:
+#      - ./eth-volumes/consensus:/consensus
+#      - ./eth-volumes/execution:/execution
+
+  beacon-chain:
+    image: "gcr.io/prysmaticlabs/prysm/beacon-chain:stable"
+    command:
+      - --datadir=/beacon1data
+      - --min-sync-peers=0
+      - --genesis-state=/consensus/genesis.ssz
+      - --bootstrap-node=
+      - --interop-eth1data-votes
+      - --chain-config-file=/consensus/config.yml
+      - --contract-deployment-block=0
+      - --chain-id=32382
+      - --rpc-host=0.0.0.0
+      - --grpc-gateway-host=0.0.0.0
+      - --execution-endpoint=http://geth:8551
+      - --accept-terms-of-use
+      - --jwt-secret=/execution/jwtsecret
+      - --suggested-fee-recipient=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --minimum-peers-per-subnet=0
+      - --enable-debug-rpc-endpoints
+      - --force-clear-db
+    ports:
+      - "4001:4000"
+      - "3500:3500"
+      - "8080:8080"
+      - "6060:6060"
+      - "9090:9090"
+    volumes:
+      - ./eth-volumes/consensus:/consensus
+      - ./eth-volumes/execution:/execution
+      - ./eth-volumes/execution/jwtsecret:/execution/jwtsecret
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.11
+
+  geth:
+    image: "ethereum/client-go:stable"
+    entrypoint: *bootnode
+    ports:
+      - "8551:8551"
+      - "8545:8545"
+      - "8546:8546"
+    depends_on:
+      beacon-chain:
+        condition: service_started
+    volumes:
+      - ./eth-volumes/execution:/execution
+      - ./eth-volumes/execution/jwtsecret:/execution/jwtsecret
+      - ./eth-volumes/execution/geth_password.txt:/execution/geth_password.txt
+      - ./eth-volumes/node1:/.keystore
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.12
+
+  validator:
+    image: "gcr.io/prysmaticlabs/prysm/validator:stable"
+    command:
+      - --beacon-rpc-provider=beacon-chain:4000
+      - --datadir=/validator1data
+      - --accept-terms-of-use
+      - --interop-num-validators=64
+      - --interop-start-index=0
+      - --chain-config-file=/consensus/config.yml
+      - --force-clear-db
+    depends_on:
+      beacon-chain:
+        condition: service_started
+      geth:
+        condition: service_started
+    volumes:
+      - ./eth-volumes/consensus:/consensus
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.13
+
+  geth2:
+    image: "ethereum/client-go:stable"
+    entrypoint: *attach
+    ports:
+      - "9551:8551"
+      - "9545:8545"
+      - "9546:8546"
+    depends_on:
+      beacon-chain:
+        condition: service_started
+      geth:
+        condition: service_started
+    volumes:
+      - ./eth-volumes/execution/genesis.json:/execution/genesis.json
+      - ./eth-volumes/execution/jwtsecret2:/execution/jwtsecret
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.14
+
+  beacon-chain2:
+    image: "gcr.io/prysmaticlabs/prysm/beacon-chain:stable"
+    command:
+      - --datadir=/beacon2data
+      - --min-sync-peers=0
+      - --genesis-state=/consensus/genesis.ssz
+      - --bootstrap-node=
+      - --interop-eth1data-votes
+      - --chain-config-file=/consensus/config.yml
+      - --contract-deployment-block=0
+      - --chain-id=32382
+      - --rpc-host=0.0.0.0
+      - --grpc-gateway-host=0.0.0.0
+      - --execution-endpoint=http://geth2:8551
+      - --accept-terms-of-use
+      - --jwt-secret=/execution/jwtsecret
+      - --suggested-fee-recipient=0x123463a4b065722e99115d6c222f267d9cabb524
+      - --minimum-peers-per-subnet=0
+      - --enable-debug-rpc-endpoints
+      - --force-clear-db
+    ports:
+      - "4002:4000"
+      - "3501:3500"
+      - "8081:8080"
+      - "6061:6060"
+      - "9091:9090"
+    volumes:
+      - ./eth-volumes/consensus:/consensus
+      - ./eth-volumes/execution:/execution
+      - ./eth-volumes/execution/jwtsecret2:/execution/jwtsecret
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.15
+
+  validator2:
+    image: "gcr.io/prysmaticlabs/prysm/validator:stable"
+    command:
+      - --beacon-rpc-provider=beacon-chain2:4000
+      - --datadir=/validator2data
+      - --accept-terms-of-use
+      - --interop-num-validators=64
+      - --interop-start-index=0
+      - --chain-config-file=/consensus/config.yml
+      - --force-clear-db
+    depends_on:
+      beacon-chain2:
+        condition: service_started
+    volumes:
+      - ./eth-volumes/consensus:/consensus
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.16
+
+  postgres:
+    image: postgres:15.0
+    environment:
+      POSTGRES_PASSWORD: "0xantps"
+      POSTGRES_DB: "antps_dev"
+    command:
+      - "-cmax_connections=3000"
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.100.101
+
+  backend:
+    extends:
+      file: ../explorer/backend.yml
+      service: backend
+    environment:
+      DATABASE_URL: postgresql://postgres:0xantps@10.112.100.101:5432/blockscout
+      ETHEREUM_JSONRPC_HTTP_URL: http://10.112.101.12:8545
+      ETHEREUM_JSONRPC_TRACE_URL: http://10.112.101.12:8545
+      ETHEREUM_JSONRPC_WS_URL: ws://10.112.101.12:8546
+      ETHEREUM_JSONRPC_HTTP_INSECURE: 'true'
+      ETHEREUM_JSONRPC_VARIANT: 'geth'
+      CHAIN_ID: '32382'
+    ports:
+      - '4000:4000'
+    depends_on:
+      - geth
+      - geth2
+      - postgres
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.100
+
+  frontend:
+    extends:
+      file: ../explorer/frontend.yml
+      service: frontend
+    environment:
+      NEXT_PUBLIC_API_HOST: '10.112.101.100:4000'
+      NEXT_PUBLIC_APP_HOST: '10.112.101.101'
+      NEXT_PUBLIC_API_BASE_PATH: '/'
+    ports:
+      - '3000:3000'
+    depends_on:
+      - geth
+      - geth2
+      - postgres
+    networks:
+      antps-eth-networks:
+        ipv4_address: 10.112.101.101
+
+networks:
+  antps-eth-networks:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 10.112.0.0/16

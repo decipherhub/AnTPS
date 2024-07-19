@@ -1,0 +1,79 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: antps-ava-blockscout
+  namespace: antps-service
+spec:
+  ports:
+    - port: 4000
+      protocol: TCP
+      targetPort: 4000
+      name: http
+  selector:
+    app: antps-ava-blockscout
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: antps-ava-blockscout
+  namespace: antps-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: antps-ava-blockscout
+  template:
+    metadata:
+      labels:
+        app: antps-ava-blockscout
+    spec:
+      containers:
+        - env:
+            - name: DATABASE_URL
+              value: 'postgresql://postgres:0xantps@antps-service-postgres.antps-service:5432/antps_blockscout'
+            - name: ETHEREUM_JSONRPC_HTTP_URL
+              value: 'http://antps-node1.antps-service:9650/ext/bc/C/rpc'
+            - name: ETHEREUM_JSONRPC_TRACE_URL
+              value: 'http://antps-node1.antps-service:9650/ext/bc/C/rpc'
+            - name: ETHEREUM_JSONRPC_WS_URL
+              value: 'ws://antps-node1.antps-service:9650/ext/bc/C/ws'
+            - name: ETHEREUM_JSONRPC_HTTP_INSECURE
+              value: 'false'
+            - name: ETHEREUM_JSONRPC_VARIANT
+              value: 'geth'
+            - name: CHAIN_ID
+              value: '43112'
+            - name: ECTO_USE_SSL
+              value: 'false'
+            - name: SECRET_KEY_BASE
+              value: '56NtB48ear7+wMSf0IQuWDAAazhpb31qyc7GiyspBP2vh7t5zlCsF5QDv76chXeN'
+            - name: MICROSERVICE_SC_VERIFIER_ENABLED
+              value: 'false'
+            - name: SUBNETWORK
+              value: 'Avalanche'
+            - name: LOGO
+              value: '/images/blockscout_logo.svg'
+            - name: DISABLE_EXCHANGE_RATES
+              value: 'true'
+            - name: API_RATE_LIMIT_BY_KEY
+              value: '50'
+          command:
+            - sh
+            - -c
+            - "bin/blockscout eval \"Elixir.Explorer.ReleaseTasks.create_and_migrate()\" && bin/blockscout start"
+          image: blockscout/blockscout:5.4.0
+          imagePullPolicy: Always
+          name: blockscout
+          ports:
+            - containerPort: 4000
+              name: http
+          resources:
+            limits:
+              memory: "1Gi"
+              ephemeral-storage: "4Gi"
+            requests:
+              cpu: "100m"
+              memory: "1Gi"
+              ephemeral-storage: "4Gi"
+  serviceName: antps-ava-blockscout

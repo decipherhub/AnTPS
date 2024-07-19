@@ -1,0 +1,76 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: antps-service-postgres
+  namespace: antps-service
+spec:
+  selector:
+    app: antps-service-postgres
+  ports:
+    - port: 5432
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: antps-postgres-init-db
+  namespace: antps-service
+data:
+  00-init-db.sh: |
+    #!/bin/bash
+    set -e
+
+    export USER_NAME='postgres'
+    export USER_PASSWORD='0xantps'
+
+    psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname "$POSTGRES_DB" <<-EOSQL
+          CREATE DATABASE antps_blockscout WITH OWNER=${USER_NAME};
+    EOSQL
+
+---
+
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: antps-service-postgres
+  namespace: antps-service
+spec:
+  replicas: 1
+  revisionHistoryLimit: 1
+  selector:
+    matchLabels:
+      app: antps-service-postgres
+  template:
+    metadata:
+      labels:
+        app: antps-service-postgres
+    spec:
+      containers:
+        - image: postgres:13.13
+          imagePullPolicy: Always
+          command:
+            - "docker-entrypoint.sh"
+          args:
+            - "postgres"
+            - "-c"
+            - "max_connections=1024"
+          env:
+            - name: POSTGRES_DB
+              value: 'antps'
+            - name: POSTGRES_USER
+              value: 'postgres'
+            - name: POSTGRES_PASSWORD
+              value: '0xantps'
+          name: postgres
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: init-db
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init-db
+          configMap:
+            name: antps-postgres-init-db
+  serviceName: antps-service-postgres

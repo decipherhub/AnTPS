@@ -1,0 +1,14 @@
+.env
+.idea
+.venv
+antps
+**/result/*.txt
+**/result/*.png
+**/result/*.html
+**/config/config.yml
+**/infra/.terraform
+**/infra/terraform.tfstate
+**/infra/.terraform.lock.hcl
+**/infra/terraform.tfstate.backup
+**/network/sei-volumes/build
+.tool-versions

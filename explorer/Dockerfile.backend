@@ -1,0 +1,2 @@
+FROM blockscout/${DOCKER_REPO:-blockscout}:5.4.0
+RUN apk update && apk add tzdata

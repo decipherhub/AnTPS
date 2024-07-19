@@ -1,0 +1,4 @@
+FROM ghcr.io/blockscout/frontend:v1.28.1
+USER root
+RUN apk update && apk add tzdata
+USER nextjs
