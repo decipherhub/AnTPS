@@ -28,7 +28,7 @@ Ensure you have the following installed:
 ### Installation
 1. Clone the repository:
    ```bash
-   git clone https://github.com/your-username/AnTPS.git
+   git clone https://github.com/decipherhub/AnTPS 
    cd AnTPS
    ```
 2. Build the Project:
@@ -59,13 +59,11 @@ Ensure you have the following installed:
    ./antps erc1155mint    # Mint ERC1155 tokens
    ./antps erc1155transfer # Transfer ERC1155 tokens
    ./antps nativetransfer # Transfer native tokens (ETH, AVAX)
-   ./antps multitransfer  # Transfer multiple tokens 
+   ./antps multitransfer  # Transfer tokens from multiple accounts 
    ```
 
 4. View results:
    ```bash
    make ava-output
    make eth-output
-   make klay-output
    ```
-   
